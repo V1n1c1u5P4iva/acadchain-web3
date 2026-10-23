@@ -8,10 +8,12 @@ import {
 } from "lucide-react";
 import "./App.css";
 
+// Identificação pública do contrato, do RPC de leitura e da rede Sepolia.
 const ADDRESS = "0xe29433e3a1b94F5f745443A120F449f7E10317cB";
 const RPC = "https://ethereum-sepolia-rpc.publicnode.com";
 const CHAIN_ID = "0xaa36a7";
 
+// ABI mínima: contém somente as funções usadas pela interface.
 const ABI = [
   "function owner() view returns (address)",
   "function emissores(address) view returns (bool)",
@@ -22,7 +24,7 @@ const ABI = [
   "function totalDiplomas() view returns (uint256)"
 ];
 
-
+// Calcula localmente o SHA-256 dos bytes do PDF, sem enviar o arquivo ao servidor.
 async function gerarHashArquivo(arquivo) {
   const bytes = await arquivo.arrayBuffer();
   const resumo = await crypto.subtle.digest("SHA-256", bytes);
@@ -32,7 +34,8 @@ async function gerarHashArquivo(arquivo) {
     .join("");
 }
 
-// Aceita um hash de arquivo ou um identificador tradicional.
+// Aceita um hash SHA-256 já formatado ou transforma um identificador textual
+// em bytes32 usando a mesma função determinística do ethers.js.
 function hashDaReferencia(valor) {
   const texto = valor.trim();
 
@@ -43,10 +46,12 @@ function hashDaReferencia(valor) {
   return ethers.id(texto);
 }
 
-
+// Monta links para endereço ou transação no explorador da rede Sepolia.
 const etherscan = (hash, tipo = "tx") =>
   `https://sepolia.etherscan.io/${tipo}/${hash}`;
 
+// Converte erros de MetaMask, ethers.js e revertes do contrato em mensagens
+// compreensíveis para a interface.
 function obterErro(erro) {
   if (erro?.code === 4001 || erro?.code === "ACTION_REJECTED") {
     return "Operação cancelada na MetaMask.";
@@ -60,7 +65,10 @@ function obterErro(erro) {
   return texto;
 }
 
+// Componente principal: coordena navegação, consultas públicas e operações
+// assinadas pela MetaMask.
 export default function App() {
+  // Estado de navegação, conexão, carregamento e notificações globais.
   const [aba, setAba] = useState("consultar");
   const [conta, setConta] = useState("");
   const [autorizado, setAutorizado] = useState(false);
@@ -69,13 +77,16 @@ export default function App() {
   const [txHash, setTxHash] = useState("");
   const [total, setTotal] = useState(null);
 
+  // Estado da consulta pública e do resultado exibido ao usuário.
   const [idConsulta, setIdConsulta] = useState("");
   const [resultado, setResultado] = useState(null);
 
+  // Arquivos selecionados e hashes calculados para registro ou consulta.
   const [arquivoRegistro, setArquivoRegistro] = useState(null);
 const [hashArquivoRegistro, setHashArquivoRegistro] = useState("");
 const [arquivoConsulta, setArquivoConsulta] = useState(null);
 
+  // Dados do formulário de emissão e da operação de revogação.
   const [registro, setRegistro] = useState({
     identificador: "",
     aluno: "",
@@ -86,11 +97,13 @@ const [arquivoConsulta, setArquivoConsulta] = useState(null);
   const [idRevogacao, setIdRevogacao] = useState("");
   const [diplomaRevogacao, setDiplomaRevogacao] = useState(null);
 
+  // Cria um contrato somente leitura por meio de um RPC público.
   function contratoLeitura() {
     const provider = new ethers.JsonRpcProvider(RPC);
     return new ethers.Contract(ADDRESS, ABI, provider);
   }
 
+  // Cria um contrato com signer da MetaMask após validar a rede Sepolia.
   async function contratoEscrita() {
     if (!window.ethereum) throw new Error("Instale a MetaMask para continuar.");
 
@@ -105,11 +118,13 @@ const [arquivoConsulta, setArquivoConsulta] = useState(null);
     return new ethers.Contract(ADDRESS, ABI, signer);
   }
 
+  // Atualiza a métrica pública com a quantidade de registros on-chain.
   async function atualizarTotal() {
     const quantidade = await contratoLeitura().totalDiplomas();
     setTotal(quantidade.toString());
   }
 
+  // Solicita contas à MetaMask, troca para Sepolia e verifica a autorização.
   async function conectar() {
     try {
       setOcupado(true);
@@ -180,6 +195,7 @@ async function selecionarArquivoRegistro(evento) {
 
   if (!arquivo) return;
 
+  // O contrato armazena o hash, mas o processamento do PDF permanece local.
   if (arquivo.type !== "application/pdf") {
     setMensagem("Selecione um arquivo PDF.");
     return;
@@ -209,6 +225,7 @@ async function selecionarArquivoConsulta(evento) {
 
   if (!arquivo) return;
 
+  // A consulta por arquivo usa o hash calculado para localizar o registro.
   if (arquivo.type !== "application/pdf") {
     setMensagem("Selecione um arquivo PDF.");
     return;
@@ -266,6 +283,7 @@ if (!identificador.trim() && !hashArquivoRegistro) {
       setMensagem("Confirme o registro na MetaMask...");
       setTxHash("");
 
+      // A MetaMask assina a transação e o recibo confirma sua inclusão.
       const contrato = await contratoEscrita();
     const hash = hashArquivoRegistro || hashDaReferencia(identificador);
       const tx = await contrato.registrarDiploma(
@@ -323,6 +341,7 @@ setHashArquivoRegistro("");
       setTxHash("");
       setMensagem("Confirme a revogação na MetaMask...");
 
+      // Somente o emissor autorizado (ou o dono, conforme o contrato) pode assinar.
       const contrato = await contratoEscrita();
       const tx = await contrato.revogarDiploma(diplomaRevogacao.hash);
 
@@ -349,6 +368,7 @@ setHashArquivoRegistro("");
     setAba(valor);
     setMensagem("");
     setTxHash("");
+    // A métrica só é consultada quando o painel inicial é aberto.
     if (valor === "inicio") atualizarTotal().catch(() => {});
   }
 
@@ -359,6 +379,7 @@ setHashArquivoRegistro("");
     { id: "revogar", titulo: "Revogar diploma", Icone: Ban }
   ];
 
+  // Apresenta os metadados retornados pelo contrato e o estado de autenticidade.
   function PainelDiploma({ dados }) {
     if (!dados) return null;
     return (
@@ -589,7 +610,11 @@ setHashArquivoRegistro("");
         )}
 
         {mensagem && (
-          <div className="notificacao">
+  <div
+    className={`notificacao ${
+      mensagem === "Diploma não encontrado." ? "notificacao-erro" : ""
+    }`}
+  >
             {ocupado ? <LoaderCircle size={18} /> : <CheckCircle2 size={18} />}
             <span>{mensagem}</span>
           </div>

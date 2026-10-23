@@ -1,16 +1,20 @@
 const hre = require("hardhat");
 
+/**
+ * Executa um fluxo de fumaça do contrato: conecta, verifica autorização,
+ * registra um diploma caso necessário e valida seus dados e autenticidade.
+ */
 async function main() {
   // Endereco do contrato implantado na Sepolia
   const endereco = "0xe29433e3a1b94F5f745443A120F449f7E10317cB";
 
-  // Conectar ao contrato
+  // Conectar ao contrato implantado usando a rede configurada no Hardhat.
   const contrato = await hre.ethers.getContractAt(
     "DiplomaRegistry",
     endereco
   );
 
-  // Obter a carteira configurada no Hardhat
+  // Obtém a carteira que assinará eventual transação de registro.
   const [signer] = await hre.ethers.getSigners();
 
   console.log("\n===== TESTE DO DIPLOMA REGISTRY =====\n");
@@ -18,7 +22,7 @@ async function main() {
   console.log("Carteira:", signer.address);
   console.log("Dono do contrato:", await contrato.owner());
 
-  // Verificar autorizacao
+  // A escrita só pode prosseguir se a carteira estiver autorizada no contrato.
   const autorizado = await contrato.emissores(signer.address);
 
   console.log("Emissor autorizado:", autorizado);
@@ -28,14 +32,14 @@ async function main() {
     return;
   }
 
-  // Dados de teste
+  // Dados determinísticos permitem repetir o teste sem criar outro identificador.
   const identificador = "DIPLOMA-TESTE-001";
   const hash = hre.ethers.id(identificador);
 
   console.log("\nIdentificador:", identificador);
   console.log("Hash do diploma:", hash);
 
-  // Verificar se o diploma ja existe
+  // Percorre os hashes públicos para evitar uma tentativa de registro duplicado.
   const total = await contrato.totalDiplomas();
 
   let jaRegistrado = false;
@@ -49,7 +53,7 @@ async function main() {
     }
   }
 
-  // Registrar diploma somente se ainda nao existir
+  // Registra o diploma somente se ainda não existir.
   if (!jaRegistrado) {
     console.log("\nRegistrando diploma...");
 
@@ -76,7 +80,7 @@ async function main() {
     console.log("\nDiploma ja registrado. Pulando cadastro.");
   }
 
-  // Consultar diploma
+  // Consulta os metadados gravados após o registro ou após localizar o existente.
   console.log("\nConsultando diploma...");
 
   const diploma = await contrato.consultarDiploma(hash);
@@ -96,7 +100,7 @@ async function main() {
   console.log("Revogado:", diploma.revogado);
   console.log("Existe:", diploma.existe);
 
-  // Verificar autenticidade
+  // A autenticidade depende da existência do registro e de ele não estar revogado.
   console.log("\nVerificando autenticidade...");
 
   const autentico = await contrato.verificarAutenticidade(hash);
@@ -114,6 +118,7 @@ async function main() {
   console.log("\n===== TESTE FINALIZADO =====\n");
 }
 
+// Exibe a causa da falha e informa ao shell que o teste terminou com erro.
 main().catch((erro) => {
   console.error("\nERRO DURANTE O TESTE:");
   console.error(erro);

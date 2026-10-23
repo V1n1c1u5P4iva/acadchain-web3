@@ -15,35 +15,49 @@ contract DiplomaRegistry {
 
     /// @notice Dados de um diploma registrado.
     struct Diploma {
-        string aluno;          // nome do diplomado
-        string curso;          // nome do curso
-        string instituicao;    // nome da instituição emissora
-        uint256 dataEmissao;   // timestamp do registro (block.timestamp)
-        address emissor;       // carteira que registrou
-        bool revogado;         // true se o diploma foi revogado
-        bool existe;           // true se o hash está registrado
+        string aluno;          // Nome do diplomado.
+        string curso;          // Nome do curso.
+        string instituicao;    // Nome da instituição emissora.
+        uint256 dataEmissao;   // Timestamp do registro, obtido de block.timestamp.
+        address emissor;       // Carteira que registrou o diploma.
+        bool revogado;         // Indica se o diploma foi revogado.
+        bool existe;           // Indica se há um registro para o hash.
     }
 
     // ---------------------------------------------------------------------
     // Estado
     // ---------------------------------------------------------------------
 
-    address public owner;                          // dono do contrato (administração)
-    mapping(address => bool) public emissores;     // carteiras autorizadas a registrar
-    mapping(bytes32 => Diploma) private diplomas;  // hash do arquivo => diploma
-    bytes32[] private hashes;                      // lista de hashes (para dashboard)
+    /// @notice Carteira administradora do contrato.
+    address public owner;
+
+    /// @notice Indica quais carteiras podem registrar e revogar diplomas.
+    mapping(address => bool) public emissores;
+
+    /// @dev Associa o hash do arquivo aos metadados do diploma.
+    mapping(bytes32 => Diploma) private diplomas;
+
+    /// @dev Mantém os hashes registrados para permitir a enumeração dos diplomas.
+    bytes32[] private hashes;
 
     // ---------------------------------------------------------------------
     // Eventos
     // ---------------------------------------------------------------------
 
+    /// @notice Emitido quando uma carteira recebe autorização para emitir diplomas.
     event EmissorAutorizado(address indexed emissor);
+
+    /// @notice Emitido quando a autorização de uma carteira é removida.
     event EmissorRemovido(address indexed emissor);
+
+    /// @notice Emitido após o registro de um novo diploma.
     event DiplomaRegistrado(bytes32 indexed hashArquivo, address indexed emissor, string aluno);
+
+    /// @notice Emitido após a revogação de um diploma.
     event DiplomaRevogado(bytes32 indexed hashArquivo, address indexed emissor);
 
     // ---------------------------------------------------------------------
-    // Modifiers
+    // Modificadores
     // ---------------------------------------------------------------------
 
     /// @dev Restringe a função ao dono do contrato.
@@ -59,7 +73,7 @@ contract DiplomaRegistry {
     }
 
     // ---------------------------------------------------------------------
-    // Constructor
+    // Construtor
     // ---------------------------------------------------------------------
 
     /// @notice Define quem implantou o contrato como dono e primeiro emissor.
@@ -73,7 +87,9 @@ contract DiplomaRegistry {
     // Administração de emissores
     // ---------------------------------------------------------------------
 
-    /// @notice Autoriza uma carteira a registrar diplomas.
+    /// @notice Autoriza uma carteira a registrar e revogar diplomas.
+    /// @param _emissor Endereço da carteira que receberá a autorização.
+    /// @dev Falha para o endereço zero ou se a carteira já estiver autorizada.
     function autorizarEmissor(address _emissor) external onlyOwner {
         require(_emissor != address(0), "Endereco invalido");
         require(!emissores[_emissor], "Ja autorizado");
@@ -82,6 +98,8 @@ contract DiplomaRegistry {
     }
 
     /// @notice Remove a autorização de uma carteira.
+    /// @param _emissor Endereço da carteira cuja autorização será removida.
+    /// @dev O dono não pode ser removido e a carteira deve estar autorizada.
     function removerEmissor(address _emissor) external onlyOwner {
         require(emissores[_emissor], "Nao e emissor");
         require(_emissor != owner, "Nao e possivel remover o dono");
@@ -95,6 +113,10 @@ contract DiplomaRegistry {
 
     /// @notice Registra um diploma, identificado pelo hash do arquivo.
     /// @param _hashArquivo SHA-256 do PDF do diploma (calculado no frontend)
+    /// @param _aluno Nome do aluno diplomado.
+    /// @param _curso Nome do curso concluído.
+    /// @param _instituicao Nome da instituição emissora.
+    /// @dev Falha se o hash for zero, já existir ou se aluno/curso estiverem vazios.
     function registrarDiploma(
         bytes32 _hashArquivo,
         string calldata _aluno,
@@ -120,7 +142,10 @@ contract DiplomaRegistry {
         emit DiplomaRegistrado(_hashArquivo, msg.sender, _aluno);
     }
 
-    /// @notice Revoga um diploma (ex.: emitido por engano). Somente o emissor original ou o dono.
+    /// @notice Revoga um diploma, mantendo seu histórico na blockchain.
+    /// @param _hashArquivo Hash do arquivo do diploma a ser revogado.
+    /// @dev Falha se o diploma não existir, já estiver revogado ou se o chamador
+    ///      não for o emissor original nem o dono.
     function revogarDiploma(bytes32 _hashArquivo) external onlyEmissor {
         Diploma storage d = diplomas[_hashArquivo];
         require(d.existe, "Diploma inexistente");
@@ -135,24 +160,33 @@ contract DiplomaRegistry {
     // Leitura (públicas, sem custo de gas ao consultar)
     // ---------------------------------------------------------------------
 
-    /// @notice Consulta pública dos dados de um diploma.
+    /// @notice Consulta publicamente os dados de um diploma.
+    /// @param _hashArquivo Hash do arquivo do diploma consultado.
+    /// @return Dados registrados para o hash informado.
+    /// @dev Falha se não houver diploma associado ao hash.
     function consultarDiploma(bytes32 _hashArquivo) external view returns (Diploma memory) {
         require(diplomas[_hashArquivo].existe, "Diploma inexistente");
         return diplomas[_hashArquivo];
     }
 
-    /// @notice Verifica se um arquivo (pelo hash) está registrado e não foi revogado.
+    /// @notice Verifica se um arquivo está registrado e não foi revogado.
+    /// @param _hashArquivo Hash do arquivo que será verificado.
+    /// @return True quando o registro existe e permanece válido; caso contrário, false.
     function verificarAutenticidade(bytes32 _hashArquivo) external view returns (bool) {
         Diploma storage d = diplomas[_hashArquivo];
         return d.existe && !d.revogado;
     }
 
-    /// @notice Quantidade total de diplomas registrados.
+    /// @notice Retorna a quantidade de diplomas registrados.
+    /// @return Número de hashes armazenados no registro.
     function totalDiplomas() external view returns (uint256) {
         return hashes.length;
     }
 
-    /// @notice Retorna o hash na posição informada (para listar no dashboard).
+    /// @notice Retorna o hash na posição informada para listagem no dashboard.
+    /// @param _i Índice do hash no vetor de registros.
+    /// @return Hash armazenado na posição solicitada.
+    /// @dev Falha quando o índice está fora do intervalo do vetor.
     function hashPorIndice(uint256 _i) external view returns (bytes32) {
         require(_i < hashes.length, "Indice fora do intervalo");
         return hashes[_i];

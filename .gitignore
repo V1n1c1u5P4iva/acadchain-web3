@@ -50,3 +50,7 @@ Thumbs.db
 # Arquivos de teste locais
 *.bak
 *.swp
+
+
+/evidencias/
+/evidencias_acadchain.zip

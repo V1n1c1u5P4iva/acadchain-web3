@@ -4,6 +4,8 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
+// Mantém a saída de build fora da análise e aplica as regras recomendadas
+// para JavaScript, hooks e atualização segura de componentes React.
 export default defineConfig([
   globalIgnores(['dist']),
   {

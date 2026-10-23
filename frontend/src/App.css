@@ -1,6 +1,7 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
+/* Tokens visuais e normalização básica dos elementos da interface. */
 :root {
   font-family: "Inter", sans-serif;
   color: #14243f;
@@ -22,6 +23,7 @@ button, input {
 button { cursor: pointer; }
 button:disabled { opacity: .55; cursor: not-allowed; }
 
+/* Estrutura principal, navegação lateral e identificação da rede. */
 .app {
   min-height: 100vh;
   display: flex;
@@ -98,6 +100,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .rede span { color: #74e4b7; font-size: 13px; font-weight: 700; }
 .rede small { color: #b5c5da; }
 
+/* Área de conteúdo, cabeçalho e cartões de métricas. */
 .principal {
   flex: 1;
   min-width: 0;
@@ -183,6 +186,7 @@ p {
   min-width: 0;
 }
 
+/* Campos de formulário, botões e estados de foco. */
 .cartao label {
   display: block;
   color: #5e718c;
@@ -228,6 +232,7 @@ input:focus {
 .btn-perigo { background: #c43f45; }
 .btn-primario:hover { background: #1d4ed8; }
 
+/* Resultado da consulta e indicadores de autenticidade/revogação. */
 .resultado {
   background: #f5f8fe;
   padding: 23px;
@@ -272,6 +277,7 @@ input:focus {
   overflow-wrap: anywhere;
 }
 
+/* Atalhos, avisos, notificações e links de auditoria. */
 .atalho, .atalhos button {
   width: 100%;
   padding: 23px;
@@ -359,6 +365,7 @@ footer {
   margin-top: 65px;
 }
 
+/* Ajustes responsivos para telas médias e dispositivos móveis. */
 @media (max-width: 1050px) {
   .colunas { grid-template-columns: 1fr; }
   .metricas { grid-template-columns: 1fr; }
@@ -411,4 +418,11 @@ input[type="file"]::file-selector-button {
   padding: 10px 14px;
   margin-right: 12px;
   cursor: pointer;
+}
+
+/* Mensagem de diploma não encontrado */
+.notificacao-erro {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
