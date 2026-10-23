@@ -153,6 +153,33 @@ Não é necessário criar um `.env` específico para o frontend na configuraçã
 3. **Verificar integridade:** consulte o PDF original e depois uma versão modificada; a alteração gera outro hash, que poderá não ter registro.
 4. **Revogar diploma:** conecte a carteira autorizada, informe o hash ou identificador utilizado no registro e confirme a revogação. O registro permanece consultável, mas perde a validade no contrato.
 
+## Documentos para teste
+
+O AcadChain disponibiliza dois documentos PDF fictícios para que qualquer pessoa possa testar a consulta pública e a verificação de integridade na blockchain Ethereum Sepolia.
+
+Os arquivos estão disponíveis na pasta [`diplomas-teste/`](./diplomas-teste/).
+
+| Documento | Arquivo | Resultado esperado |
+|---|---|---|
+| Diploma original | `diploma_original_acadchain_2026.pdf` | **Revogado** |
+| Diploma modificado | `diploma_modificado_acadchain_2026.pdf` | **Não encontrado** |
+
+### Como realizar os testes
+
+1. Clone o repositório e execute o frontend conforme as instruções anteriores.
+2. Abra a opção **Consultar diploma**.
+3. Selecione o arquivo PDF original na pasta `diplomas-teste/`.
+4. Clique em **Verificar diploma**. O sistema deverá apresentar o estado **Revogado**, pois o registro já foi revogado na Sepolia.
+5. Repita o procedimento com o PDF modificado. O sistema deverá apresentar **Não encontrado**, pois seu hash é diferente do original.
+
+**Hash SHA-256 do documento original:**
+
+`0x7d40e8020533671978989ee759ab8195f97b60780e75ae6aa84509a173c9d65b`
+
+A consulta é pública, não exige conexão com a MetaMask e não consome ETH de teste.
+
+**Observação:** os documentos são inteiramente fictícios, utilizados exclusivamente para demonstração acadêmica, sem validade oficial.
+
 ## Testes e resultados
 
 Foram executados testes com Hardhat, React, MetaMask, Etherscan e Remix IDE.
